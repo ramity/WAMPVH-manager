@@ -1,7 +1,12 @@
 <?php
+//USER INPUT VARIABLES
+$httd_url = 'C:\wamp\bin\apache\apache2.4.9\conf\httpd.conf';
+$hosts_url = 'C:\Windows\System32\drivers\etc\hosts';
+$vhosts_url = 'C:\wamp\bin\apache\apache2.4.9\conf\extra\httpd-vhosts.conf';
+
 $vhost_enabled = false;
 
-$contents = file_get_contents('D:\wamp\bin\apache\apache2.4.9\conf\httpd.conf');
+$contents = file_get_contents($httd_url);
 
 $searchfor = 'LoadModule';
 
@@ -39,90 +44,57 @@ foreach($modules as $module)
 //do stuff if vhost_alias_module is enabled
 if($vhost_enabled)
 {
-  echo 'vhost_enabled';
-  echo '<br><br>';
-}
-
-$hosts = [];
-
-//viewing hosts file for windows machine
-$contents = file_get_contents('C:\Windows\System32\drivers\etc\hosts');
-
-$lines = explode("\n",$contents);
-
-echo '<form action="config.php" method="post">';
-
-for($z=0;$z<count($lines);$z++)
-{
-  $line = $lines[$z];
-
-  if(strpos($line,'#') === false && !empty($line) && !ctype_space($line))
+  if(isset($_POST['file_input_a']) && !empty($_POST['file_input_a']))
   {
-    $line_parts = explode(' ',$line);
+    file_put_contents($hosts_url,$_POST['file_input_a']);
 
-    if(isset($_POST['edithostfile'])&&!empty($_POST['edithostfile']))
-    {
-
-    }
-
-    $temp_array = [];
-
-    for($y=0;$y<count($line_parts);$y++)
-    {
-      $part = $line_parts[$y];
-
-      //gets values seperated by white space
-      if($part)
-      {
-        $name = $z.'-'.$y;
-
-        if(isset($_POST['edithostfile'])&&!empty($_POST['edithostfile']))
-        {
-          array_push($temp_array,$_POST[$name]);
-
-          $part = $_POST[$name];
-        }
-
-        echo '<input type="text" name="'.$name.'" value="'.$part.'">';
-      }
-    }
-
-    $name = $z.'-delete';
-
-    echo '<input type="text" name="'.$name.'" value="0">';
-
-    if(isset($_POST['edithostfile'])&&!empty($_POST['edithostfile']))
-    {
-      if(isset($_POST[$name]) && !empty($_POST[$name]) && $_POST[$name])
-      {
-        $lines[$z] = '';
-      }
-      else
-      {
-        $lines[$z] = implode(" ",$temp_array);
-      }
-    }
-
-    echo '<br>';
-    echo '<br>';
-
-    array_push($hosts,[$z,$line]);
+    $contents = $_POST['file_input_a'];
   }
+  else
+  {
+    $contents = file_get_contents($hosts_url);
+  }
+
+  echo '<body>';
+
+    echo 'vhost_enabled';
+
+    echo '<br>';
+    echo '<br>';
+
+    //viewing hosts file for windows machine
+    echo '<form action="config.php" method="post" style="width:auto;">';
+
+      echo '<textarea name="file_input_a" cols="100" rows="30">'.$contents.'</textarea>';
+
+      echo '<br>';
+      echo '<br>';
+
+      echo '<input type="submit" name="edithostfile_a" value="submit">';
+    echo '</form>';
+
+  if(isset($_POST['file_input_b']) && !empty($_POST['file_input_b']))
+  {
+    file_put_contents($vhosts_url,$_POST['file_input_b']);
+
+    $contents = $_POST['file_input_b'];
+  }
+  else
+  {
+    $contents = file_get_contents($vhosts_url);
+  }
+
+    //viewing hosts file for windows machine
+    echo '<form action="config.php" method="post" style="width:auto;">';
+
+      echo '<textarea name="file_input_b" cols="100" rows="30">'.$contents.'</textarea>';
+
+      echo '<br>';
+      echo '<br>';
+
+      echo '<input type="submit" name="edithostfile_b" value="submit">';
+    echo '</form>';
+
+  echo '</body>';
 }
-
-echo $contents = implode("\n",$lines);
-
-echo '<br>';
-echo '<br>';
-
-echo '<input type="text" name="'.count($lines).'-0" placeholder="ip">';
-echo '<input type="text" name="'.count($lines).'-1" placeholder="url">';
-
-echo '<br>';
-echo '<br>';
-
-echo '<input type="submit" name="edithostfile" value="submit">';
-echo '</form>';
-
-echo '<br>';
 ?>
