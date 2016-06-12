@@ -1,8 +1,33 @@
 <?php
-//USER INPUT VARIABLES
-$httd_url = 'C:\wamp\bin\apache\apache2.4.9\conf\httpd.conf';
-$hosts_url = 'C:\Windows\System32\drivers\etc\hosts';
-$vhosts_url = 'C:\wamp\bin\apache\apache2.4.9\conf\extra\httpd-vhosts.conf';
+if(file_exists('config.txt'))
+{
+  $file = file('config.txt');
+
+  for($z=0;$z<count($file);$z++)
+  {
+    $file[$z] = trim($file[$z]);
+  }
+
+  $httd_url = str_replace('/','\\',$file[1]);
+  $hosts_url = str_replace('/','\\',$file[3]);
+  $vhosts_url = str_replace('/','\\',$file[5]);
+}
+else
+{
+  $file = fopen('config.txt','w');
+
+  $default = "httd_url:\r\nC:/wamp/bin/apache/apache2.4.9/conf/httpd.conf\r\nhosts_url:\r\nC:/Windows/System32/drivers/etc/hosts\r\nvhosts_url:\r\nC:/wamp/bin/apache/apache2.4.9/conf/extra/httpd-vhosts.conf";
+
+  fwrite($file, $default);
+
+  $file = file('config.txt');
+
+  $httd_url = str_replace('/','\\',$file[1]);
+  $hosts_url = str_replace('/','\\',$file[3]);
+  $vhosts_url = str_replace('/','\\',$file[5]);
+}
+
+echo gettype($file[0]);
 
 $vhost_enabled = false;
 
