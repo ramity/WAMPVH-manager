@@ -94,6 +94,24 @@ if($vhost_enabled)
     }
   }
 
+  if(isset($_POST['hosts-update']) && !empty($_POST['hosts-update']))
+  {
+    for($z=0;$z<count($lines);$z++)
+    {
+      $name_a = $z . '-0';
+      $name_b = $z . '-1';
+
+      if(isset($_POST[$name_a]) && !empty($_POST[$name_a]) && isset($_POST[$name_b]) && !empty($_POST[$name_b]))
+      {
+        $lines[$z] = $_POST[$name_a] . ' ' . $_POST[$name_b];
+      }
+    }
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($hosts_url, $file);
+  }
+
   $file = file_get_contents($vhosts_url);
 
   $lines = explode("\n", $file);
@@ -140,6 +158,56 @@ if($vhost_enabled)
       }
     }
   }
+
+  if(isset($_POST['vhosts-update']) && !empty($_POST['vhosts-update']))
+  {
+    for($z=0;$z<count($lines);$z++)
+    {
+      $name_a = $z . '-ServerAdmin';
+      $name_b = $z . '-DocumentRoot';
+      $name_c = $z . '-ServerName';
+
+      if(isset($_POST[$name_a]) && !empty($_POST[$name_a]))
+      {
+        $lines[$z] = '    ServerAdmin ' . $_POST[$name_a];
+      }
+
+      if(isset($_POST[$name_b]) && !empty($_POST[$name_b]))
+      {
+        $lines[$z] = '    DocumentRoot ' . $_POST[$name_a];
+      }
+
+      if(isset($_POST[$name_c]) && !empty($_POST[$name_c]))
+      {
+        $lines[$z] = '    ServerName ' . $_POST[$name_a];
+      }
+    }
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($vhosts_url, $file);
+  }
+
+  if(isset($_POST['vhosts-create']) && !empty($_POST['vhosts-create']))
+  {
+    $name_a = ($vhosts_count + 2) . '-ServerAdmin';
+    $name_b = ($vhosts_count + 3) . '-DocumentRoot';
+    $name_c = ($vhosts_count + 4) . '-ServerName';
+
+    $temp_array = [
+      ['<VirtualHost *:80>'],
+      ['    ServerAdmin ' . $_POST[$name_a]],
+      ['    DocumentRoot ' .  $_POST[$name_b]],
+      ['    ServerName ' .  $_POST[$name_c]],
+      ['</VirtualHost>'],
+    ];
+
+    array_push($lines, $temp_array);
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($vhosts_url, $file);
+  }
 }
 ?>
 <!DOCTYPE html>
@@ -166,11 +234,10 @@ if($vhost_enabled)
 
             foreach($items as $item)
             {
-              $last = $item[0];
               echo '<input type="text" class="full" name="'.$item[0].'-'.$item[1].'" value="'.$item[2].'">';
             }
 
-            echo '<input type="submit" class="submit" name="hosts-'.$last.'-submit" value="Update">';
+            echo '<input type="submit" class="submit" name="hosts-update" value="Update">';
 
             echo '</form>';
           }
@@ -178,7 +245,7 @@ if($vhost_enabled)
           echo '<form class="inputholder" method="POST">';
             echo '<input type="text" class="full" name="'.$hosts_count.'-0" placeholder="URL">';
             echo '<input type="text" class="full" name="'.$hosts_count.'-1" placeholder="Domain">';
-            echo '<input type="submit" class="submit" name="'.$hosts_count.'-submit" value="Create">';
+            echo '<input type="submit" class="submit" name="'.$hosts_count.'-create" value="Create">';
           echo '</form>';
 
           echo '<div class="inputheader">vHosts editor</div>';
@@ -187,16 +254,11 @@ if($vhost_enabled)
           {
             echo '<form class="inputholder" method="POST">';
 
-            $first = '';
             foreach($items as $item)
             {
-              if(empty($first))
-              {
-                $first = $item[0];
-              }
               echo '<input type="text" class="full" name="'.$item[0].'-'.$item[1].'" value="'.htmlentities($item[2]).'">';
             }
-            echo '<input type="submit" class="submit" name="vhosts-'.($first - 1).'-submit" value="Update">';
+            echo '<input type="submit" class="submit" name="vhosts-update" value="Update">';
 
             echo '</form>';
           }
@@ -205,7 +267,7 @@ if($vhost_enabled)
             echo '<input type="text" class="full" name="'.($vhosts_count + 2).'-ServerAdmin" placeholder="ServerAdmin">';
             echo '<input type="text" class="full" name="'.($vhosts_count + 3).'-DocumentRoot" placeholder="DocumentRoot">';
             echo '<input type="text" class="full" name="'.($vhosts_count + 4).'-ServerName" placeholder="ServerName">';
-            echo '<input type="submit" class="submit" name="vhosts-'.$vhosts_count.'-submit" value="Create">';
+            echo '<input type="submit" class="submit" name="vhosts-create" value="Create">';
           echo '</form>';
         }
         else
