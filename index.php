@@ -110,6 +110,45 @@ if($vhost_enabled)
     $file = implode("\n", $lines);
 
     file_put_contents($hosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+  }
+
+  if(isset($_POST['hosts-create']) && !empty($_POST['hosts-create']))
+  {
+    $name_a = $hosts_count . '-0';
+    $name_b = $hosts_count . '-1';
+
+    if(isset($_POST[$name_a]) && !empty($_POST[$name_a]) && isset($_POST[$name_b]) && !empty($_POST[$name_b]))
+    {
+      array_push($lines, $_POST[$name_a] . ' ' . $_POST[$name_b]);
+    }
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($hosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+  }
+
+  if(isset($_POST['hosts-delete']) && !empty($_POST['hosts-delete']))
+  {
+    for($z=0;$z<count($lines);$z++)
+    {
+      $name_a = $z . '-0';
+      $name_b = $z . '-1';
+
+      if(isset($_POST[$name_a]) && !empty($_POST[$name_a]) && isset($_POST[$name_b]) && !empty($_POST[$name_b]))
+      {
+        array_splice($lines, $z, 1);
+      }
+    }
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($hosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
   }
 
   $file = file_get_contents($vhosts_url);
@@ -126,14 +165,7 @@ if($vhost_enabled)
     {
       if(strpos($lines[$z], '<VirtualHost') === false)
       {
-        if(strpos($lines[$z], 'ServerAdmin') !== false)
-        {
-          $temp = explode('ServerAdmin', $lines[$z]);
-          $temp = trim($temp[1]);
-
-          array_push($temp_array, [$z, 'ServerAdmin', $temp]);
-        }
-        elseif(strpos($lines[$z], 'DocumentRoot') !== false)
+        if(strpos($lines[$z], 'DocumentRoot') !== false)
         {
           $temp = explode('DocumentRoot', $lines[$z]);
           $temp = trim($temp[1]);
@@ -163,50 +195,63 @@ if($vhost_enabled)
   {
     for($z=0;$z<count($lines);$z++)
     {
-      $name_a = $z . '-ServerAdmin';
+      $name_a = $z . '-ServerName';
       $name_b = $z . '-DocumentRoot';
-      $name_c = $z . '-ServerName';
 
       if(isset($_POST[$name_a]) && !empty($_POST[$name_a]))
       {
-        $lines[$z] = '    ServerAdmin ' . $_POST[$name_a];
+        $lines[$z] = '  ServerName ' . $_POST[$name_a];
       }
 
       if(isset($_POST[$name_b]) && !empty($_POST[$name_b]))
       {
-        $lines[$z] = '    DocumentRoot ' . $_POST[$name_a];
-      }
-
-      if(isset($_POST[$name_c]) && !empty($_POST[$name_c]))
-      {
-        $lines[$z] = '    ServerName ' . $_POST[$name_a];
+        $lines[$z] = '  DocumentRoot ' . $_POST[$name_b];
       }
     }
 
     $file = implode("\n", $lines);
 
     file_put_contents($vhosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
   }
 
   if(isset($_POST['vhosts-create']) && !empty($_POST['vhosts-create']))
   {
-    $name_a = ($vhosts_count + 2) . '-ServerAdmin';
+    $name_a = ($vhosts_count + 2) . '-ServerName';
     $name_b = ($vhosts_count + 3) . '-DocumentRoot';
-    $name_c = ($vhosts_count + 4) . '-ServerName';
 
-    $temp_array = [
-      ['<VirtualHost *:80>'],
-      ['    ServerAdmin ' . $_POST[$name_a]],
-      ['    DocumentRoot ' .  $_POST[$name_b]],
-      ['    ServerName ' .  $_POST[$name_c]],
-      ['</VirtualHost>'],
-    ];
-
-    array_push($lines, $temp_array);
+    array_push($lines, '<VirtualHost *:80>');
+    array_push($lines, '  ServerName ' .  $_POST[$name_a]);
+    array_push($lines, '  DocumentRoot ' .  $_POST[$name_b]);
+    array_push($lines, '</VirtualHost>');
+    array_push($lines, '');
 
     $file = implode("\n", $lines);
 
     file_put_contents($vhosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+  }
+
+  if(isset($_POST['vhosts-delete']) && !empty($_POST['vhosts-delete']))
+  {
+    for($z=0;$z<count($lines);$z++)
+    {
+      $name_a = $z . '-ServerName';
+      //$name_b = $z . '-DocumentRoot';
+
+      if(isset($_POST[$name_a]) && !empty($_POST[$name_a]))
+      {
+        array_splice($lines, ($z - 1), 5);
+      }
+    }
+
+    $file = implode("\n", $lines);
+
+    file_put_contents($vhosts_url, $file);
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
   }
 }
 ?>
@@ -238,6 +283,7 @@ if($vhost_enabled)
             }
 
             echo '<input type="submit" class="submit" name="hosts-update" value="Update">';
+            echo '<input type="submit" class="delete" name="hosts-delete" value="Delete">';
 
             echo '</form>';
           }
@@ -245,7 +291,7 @@ if($vhost_enabled)
           echo '<form class="inputholder" method="POST">';
             echo '<input type="text" class="full" name="'.$hosts_count.'-0" placeholder="URL">';
             echo '<input type="text" class="full" name="'.$hosts_count.'-1" placeholder="Domain">';
-            echo '<input type="submit" class="submit" name="'.$hosts_count.'-create" value="Create">';
+            echo '<input type="submit" class="submitbig" name="hosts-create" value="Create">';
           echo '</form>';
 
           echo '<div class="inputheader">vHosts editor</div>';
@@ -259,15 +305,15 @@ if($vhost_enabled)
               echo '<input type="text" class="full" name="'.$item[0].'-'.$item[1].'" value="'.htmlentities($item[2]).'">';
             }
             echo '<input type="submit" class="submit" name="vhosts-update" value="Update">';
+            echo '<input type="submit" class="delete" name="vhosts-delete" value="Delete">';
 
             echo '</form>';
           }
 
           echo '<form class="inputholder" method="POST">';
-            echo '<input type="text" class="full" name="'.($vhosts_count + 2).'-ServerAdmin" placeholder="ServerAdmin">';
+            echo '<input type="text" class="full" name="'.($vhosts_count + 2).'-ServerName" placeholder="ServerName">';
             echo '<input type="text" class="full" name="'.($vhosts_count + 3).'-DocumentRoot" placeholder="DocumentRoot">';
-            echo '<input type="text" class="full" name="'.($vhosts_count + 4).'-ServerName" placeholder="ServerName">';
-            echo '<input type="submit" class="submit" name="vhosts-create" value="Create">';
+            echo '<input type="submit" class="submitbig" name="vhosts-create" value="Create">';
           echo '</form>';
         }
         else
