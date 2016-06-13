@@ -1,4 +1,5 @@
 <?php
+//setting up variables from config
 if(file_exists('config.txt'))
 {
   $file = file('config.txt');
@@ -27,9 +28,11 @@ else
   $vhosts_url = str_replace('/','\\',$file[5]);
 }
 
-echo gettype($file[0]);
-
+//setting variables
 $vhost_enabled = false;
+$hosts = [];
+$vhosts = [];
+$modules = [];
 
 $contents = file_get_contents($httd_url);
 
@@ -37,8 +40,6 @@ $searchfor = 'LoadModule';
 
 $pattern = preg_quote($searchfor, '/');
 $pattern = "/^.*$pattern.*\$/m";
-
-$modules = [];
 
 //compiling list of all enabled modules
 if(preg_match_all($pattern, $contents, $matches))
@@ -66,60 +67,153 @@ foreach($modules as $module)
   }
 }
 
-//do stuff if vhost_alias_module is enabled
 if($vhost_enabled)
 {
-  if(isset($_POST['file_input_a']) && !empty($_POST['file_input_a']))
+  $file = file_get_contents($hosts_url);
+
+  $lines = explode("\n", $file);
+
+  $hosts_count = count($lines);
+
+  for($z=0;$z<count($lines);$z++)
   {
-    file_put_contents($hosts_url,$_POST['file_input_a']);
+    if(strpos($lines[$z], '#') === false && !empty($lines[$z]) && !ctype_space($lines[$z]))
+    {
+      $temp_array = [];
 
-    $contents = $_POST['file_input_a'];
-  }
-  else
-  {
-    $contents = file_get_contents($hosts_url);
-  }
+      $segments = explode(' ', $lines[$z]);
 
-  echo '<body>';
-
-    echo 'vhost_enabled';
-
-    echo '<br>';
-    echo '<br>';
-
-    //viewing hosts file for windows machine
-    echo '<form action="config.php" method="post" style="width:auto;">';
-
-      echo '<textarea name="file_input_a" cols="100" rows="30">'.$contents.'</textarea>';
-
-      echo '<br>';
-      echo '<br>';
-
-      echo '<input type="submit" name="edithostfile_a" value="submit">';
-    echo '</form>';
-
-  if(isset($_POST['file_input_b']) && !empty($_POST['file_input_b']))
-  {
-    file_put_contents($vhosts_url,$_POST['file_input_b']);
-
-    $contents = $_POST['file_input_b'];
-  }
-  else
-  {
-    $contents = file_get_contents($vhosts_url);
+      for($y=0;$y<count($segments);$y++)
+      {
+        if(!empty($segments[$y]) && !ctype_space($segments[$y]))
+        {
+          array_push($temp_array,[$z, $y, $segments[$y]]);
+        }
+      }
+      array_push($hosts, $temp_array);
+    }
   }
 
-    //viewing hosts file for windows machine
-    echo '<form action="config.php" method="post" style="width:auto;">';
+  $file = file_get_contents($vhosts_url);
 
-      echo '<textarea name="file_input_b" cols="100" rows="30">'.$contents.'</textarea>';
+  $lines = explode("\n", $file);
 
-      echo '<br>';
-      echo '<br>';
+  $vhosts_count = count($lines);
 
-      echo '<input type="submit" name="edithostfile_b" value="submit">';
-    echo '</form>';
+  $temp_array = [];
 
-  echo '</body>';
+  for($z=0;$z<count($lines);$z++)
+  {
+    if(strpos($lines[$z], '#') === false && !empty($lines[$z]) && !ctype_space($lines[$z]))
+    {
+      if(strpos($lines[$z], '<VirtualHost') === false)
+      {
+        if(strpos($lines[$z], 'ServerAdmin') !== false)
+        {
+          $temp = explode('ServerAdmin', $lines[$z]);
+          $temp = trim($temp[1]);
+
+          array_push($temp_array, [$z, 'ServerAdmin', $temp]);
+        }
+        elseif(strpos($lines[$z], 'DocumentRoot') !== false)
+        {
+          $temp = explode('DocumentRoot', $lines[$z]);
+          $temp = trim($temp[1]);
+
+          array_push($temp_array, [$z, 'DocumentRoot', $temp]);
+        }
+        elseif(strpos($lines[$z], 'ServerName') !== false)
+        {
+          $temp = explode('ServerName', $lines[$z]);
+          $temp = trim($temp[1]);
+
+          array_push($temp_array, [$z, 'ServerName', $temp]);
+        }
+        elseif(strpos($lines[$z], '</VirtualHost>') !== false)
+        {
+          array_push($vhosts, $temp_array);
+        }
+      }
+      else
+      {
+        $temp_array = [];
+      }
+    }
+  }
 }
 ?>
+<!DOCTYPE html>
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="main.css">
+  </head>
+  <body>
+    <div id="topbar">
+      <div id="topbarname">Virtual Host Configuration Manager</div>
+    </div>
+    <div id="content">
+      <div id="contentinr">
+        <?php
+        if($vhost_enabled)
+        {
+          echo '<div class="notice">Success! Module vHost is enabled</div>';
+
+          echo '<div class="inputheader">Hosts editor</div>';
+
+          foreach($hosts as $items)
+          {
+            echo '<form class="inputholder" method="POST">';
+
+            foreach($items as $item)
+            {
+              $last = $item[0];
+              echo '<input type="text" class="full" name="'.$item[0].'-'.$item[1].'" value="'.$item[2].'">';
+            }
+
+            echo '<input type="submit" class="submit" name="hosts-'.$last.'-submit" value="Update">';
+
+            echo '</form>';
+          }
+
+          echo '<form class="inputholder" method="POST">';
+            echo '<input type="text" class="full" name="'.$hosts_count.'-0" placeholder="URL">';
+            echo '<input type="text" class="full" name="'.$hosts_count.'-1" placeholder="Domain">';
+            echo '<input type="submit" class="submit" name="'.$hosts_count.'-submit" value="Create">';
+          echo '</form>';
+
+          echo '<div class="inputheader">vHosts editor</div>';
+
+          foreach($vhosts as $items)
+          {
+            echo '<form class="inputholder" method="POST">';
+
+            $first = '';
+            foreach($items as $item)
+            {
+              if(empty($first))
+              {
+                $first = $item[0];
+              }
+              echo '<input type="text" class="full" name="'.$item[0].'-'.$item[1].'" value="'.htmlentities($item[2]).'">';
+            }
+            echo '<input type="submit" class="submit" name="vhosts-'.($first - 1).'-submit" value="Update">';
+
+            echo '</form>';
+          }
+
+          echo '<form class="inputholder" method="POST">';
+            echo '<input type="text" class="full" name="'.($vhosts_count + 2).'-ServerAdmin" placeholder="ServerAdmin">';
+            echo '<input type="text" class="full" name="'.($vhosts_count + 3).'-DocumentRoot" placeholder="DocumentRoot">';
+            echo '<input type="text" class="full" name="'.($vhosts_count + 4).'-ServerName" placeholder="ServerName">';
+            echo '<input type="submit" class="submit" name="vhosts-'.$vhosts_count.'-submit" value="Create">';
+          echo '</form>';
+        }
+        else
+        {
+          echo '<div class="error">Error! Module vHost is not enabled</div>';
+        }
+        ?>
+      </div>
+    </div>
+  </body>
+</html>
