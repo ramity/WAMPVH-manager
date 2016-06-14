@@ -23,6 +23,11 @@ else
 
   $file = file('config.txt');
 
+  for($z=0;$z<count($file);$z++)
+  {
+    $file[$z] = trim($file[$z]);
+  }
+
   $httd_url = str_replace('/','\\',$file[1]);
   $hosts_url = str_replace('/','\\',$file[3]);
   $vhosts_url = str_replace('/','\\',$file[5]);
