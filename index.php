@@ -33,6 +33,8 @@ $vhost_enabled = false;
 $hosts = [];
 $vhosts = [];
 $modules = [];
+$serverNames = [];
+$verifiedServerNames = [];
 
 $contents = file_get_contents($httd_url);
 
@@ -87,7 +89,15 @@ if($vhost_enabled)
       {
         if(!empty($segments[$y]) && !ctype_space($segments[$y]))
         {
+          $segments[$y] = trim($segments[$y]);
+
           array_push($temp_array,[$z, $y, $segments[$y]]);
+
+          //only works if url contains localhost atm
+          if(strpos($segments[$y], 'localhost') !== false)
+          {
+            array_push($serverNames, $segments[$y]);
+          }
         }
       }
       array_push($hosts, $temp_array);
@@ -158,6 +168,7 @@ if($vhost_enabled)
   $vhosts_count = count($lines);
 
   $temp_array = [];
+  $temp_verify_array = [];
 
   for($z=0;$z<count($lines);$z++)
   {
@@ -171,6 +182,8 @@ if($vhost_enabled)
           $temp = trim($temp[1]);
 
           array_push($temp_array, [$z, 'DocumentRoot', $temp]);
+
+          $temp_verify_array += ['documentRoot' => $temp];
         }
         elseif(strpos($lines[$z], 'ServerName') !== false)
         {
@@ -178,15 +191,25 @@ if($vhost_enabled)
           $temp = trim($temp[1]);
 
           array_push($temp_array, [$z, 'ServerName', $temp]);
+
+          if(in_array($temp, $serverNames))
+          {
+            $temp_verify_array += ['serverName' => $temp];
+          }
         }
         elseif(strpos($lines[$z], '</VirtualHost>') !== false)
         {
           array_push($vhosts, $temp_array);
+          array_push($verifiedServerNames, $temp_verify_array);
+
+          $temp_array = [];
+          $temp_verify_array = [];
         }
       }
       else
       {
         $temp_array = [];
+        $temp_verify_array = [];
       }
     }
   }
@@ -239,7 +262,6 @@ if($vhost_enabled)
     for($z=0;$z<count($lines);$z++)
     {
       $name_a = $z . '-ServerName';
-      //$name_b = $z . '-DocumentRoot';
 
       if(isset($_POST[$name_a]) && !empty($_POST[$name_a]))
       {
@@ -270,6 +292,18 @@ if($vhost_enabled)
         if($vhost_enabled)
         {
           echo '<div class="notice">Success! Module vHost is enabled</div>';
+
+          if($verifiedServerNames)
+          {
+            echo '<div id="shortlinks">';
+
+            foreach($verifiedServerNames as $verifiedServerName)
+            {
+              echo '<a href="http://'. $verifiedServerName['serverName'] .'">'. str_replace('"', "", $verifiedServerName['documentRoot']) .'</a>';
+            }
+
+            echo '</div>';
+          }
 
           echo '<div class="inputheader">Hosts editor</div>';
 
